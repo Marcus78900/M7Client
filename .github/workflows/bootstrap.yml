@@ -25,10 +25,62 @@ jobs:
         with:
           gradle-version: "8.13"
 
-      - name: Compilar APK
-        run: gradle :app:assembleDebug --stacktrace
+      - name: Compilar M7 Client
+        shell: bash
+        run: |
+          set +e
 
-      - name: Enviar APK
+          gradle :app:assembleDebug \
+            --console=plain \
+            --no-daemon \
+            > build.log 2>&1
+
+          CODE=$?
+
+          echo ""
+          echo "========================================"
+          echo "       M7 CLIENT - ERROS IMPORTANTES"
+          echo "========================================"
+
+          grep -nEi \
+            "error:|e: |FAILURE:|What went wrong|Execution failed|Unresolved reference|Could not resolve|Could not find|Android resource linking failed|AAPT|Compilation error|Exception is:" \
+            build.log | head -n 100 || true
+
+          echo ""
+          echo "========================================"
+          echo "          FINAL DO LOG COMPLETO"
+          echo "========================================"
+
+          tail -n 120 build.log
+
+          {
+            echo "## M7 Client Build"
+            echo ""
+            if [ "$CODE" -eq 0 ]; then
+              echo "✅ APK compilado com sucesso."
+            else
+              echo "❌ Build falhou."
+              echo ""
+              echo '```text'
+              grep -Ei \
+                "error:|e: |FAILURE:|What went wrong|Execution failed|Unresolved reference|Could not resolve|Could not find|Android resource linking failed|AAPT|Compilation error" \
+                build.log | head -n 50 || true
+              echo '```'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          exit $CODE
+
+      - name: Guardar log de compilação
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: M7-Client-Build-Log
+          path: build.log
+          if-no-files-found: warn
+
+      - name: Publicar APK
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: M7-Client-v0.1-ALPHA
