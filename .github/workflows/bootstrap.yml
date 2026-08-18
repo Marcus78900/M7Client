@@ -19,6 +19,7 @@ jobs:
           rm -rf /tmp/m7
           mkdir -p /tmp/m7
           unzip -q M7_Client_v0.1_Source.zip -d /tmp/m7
+          rm -rf /tmp/m7/M7-Client/.github
           cp -a /tmp/m7/M7-Client/. .
           rm -f M7_Client_v0.1_Source.zip
 
